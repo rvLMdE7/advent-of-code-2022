@@ -1,0 +1,92 @@
+cabal-version: 3.0
+
+name: adventofcode2022
+version: 0.1.0.0
+author: rvLMdE7
+build-type: Simple
+license: BSD-3-Clause
+
+license-file: LICENSE
+extra-source-files: README.md
+data-files: input/*.txt
+
+
+common common-ghc-lib-options
+    ghc-options:
+        -Wall
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns
+        -Wpartial-fields
+        -Wredundant-constraints
+        -fhide-source-paths
+
+common common-lang-options
+    default-language: Haskell2010
+    default-extensions:
+        , BinaryLiterals
+        , ImportQualifiedPost
+        , LambdaCase
+        , NumericUnderscores
+        , TypeApplications
+        , QuasiQuotes
+
+common common-lib-options
+    import:
+        , common-lang-options
+        , common-ghc-lib-options
+    build-depends:
+        , base ^>=4.15.1
+        , bytestring ^>=0.10.12
+        , text ^>=1.2.5
+        , flow ^>=2.0.0
+        , megaparsec ^>=9.2.0
+        , vector ^>=0.12.3
+
+common common-runtime-options
+    import:
+        , common-lang-options
+        , common-ghc-lib-options
+    hs-source-dirs: run
+    build-depends: base
+    ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
+
+
+library
+    import: common-lib-options
+    hs-source-dirs:
+        , src/main
+        , src/help
+    other-modules: Paths_adventofcode2022
+    exposed-modules:
+        , Common
+        , Day01
+
+common common-exe-options
+    import: common-runtime-options
+    build-depends: adventofcode2022
+
+executable day-01
+    import: common-exe-options
+    mixins: adventofcode2022 (Day01 as Day)
+    main-is: Run.hs
+
+
+library adventofcode2022-tests
+    import: common-lib-options
+    hs-source-dirs: test
+    build-depends:
+        , adventofcode2022
+        , tasty ^>=1.4.2
+        , tasty-hunit ^>=0.10.0
+    exposed-modules:
+        , Test01
+
+common common-test-options
+    import: common-runtime-options
+    build-depends: adventofcode2022-tests
+
+test-suite test-01
+    import: common-test-options
+    mixins: adventofcode2022-tests (Test01 as Test)
+    main-is: Spec.hs
+    type: exitcode-stdio-1.0
