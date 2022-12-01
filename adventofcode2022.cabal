@@ -41,6 +41,7 @@ common common-lib-options
         , flow ^>=2.0.0
         , megaparsec ^>=9.2.0
         , vector ^>=0.12.3
+        , vector-algorithms ^>=0.8.0
 
 common common-runtime-options
     import:

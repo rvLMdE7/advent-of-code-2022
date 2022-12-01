@@ -1,7 +1,9 @@
 module Day01 where
 
+import Data.Ord (Down(Down), comparing)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vec
+import Data.Vector.Algorithms.Merge qualified as Vec.Merge
 import Flow ((.>))
 import System.Exit (die)
 import Text.Megaparsec qualified as Parse
@@ -22,6 +24,12 @@ parseInput = fmap Vec.fromList $
 part1 :: Vector (Vector Word) -> Word
 part1 = fmap Vec.sum .> Vec.foldl' max 0
 
+part2 :: Vector (Vector Word) -> Word
+part2 = fmap Vec.sum
+    .> Vec.modify (Vec.Merge.sortBy $ comparing Down)
+    .> Vec.take 3
+    .> Vec.sum
+
 main :: IO ()
 main = do
     text <- readInputFileUtf8 "input/day-01.txt"
@@ -29,3 +37,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right calories -> do
             print $ part1 calories
+            print $ part2 calories

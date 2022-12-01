@@ -17,7 +17,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 example :: Vector (Vector Word)
 example = Vec.fromList $ fmap Vec.fromList
@@ -31,3 +31,8 @@ part1Tests :: TestTree
 part1Tests = Tasty.testGroup "part 1 tests"
     [ HUnit.testCase "example" $
         Day01.part1 example @?= 24_000 ]
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "example" $
+        Day01.part2 example @?= 45_000 ]
