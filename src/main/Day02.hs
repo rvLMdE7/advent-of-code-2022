@@ -68,6 +68,8 @@ outcome MkGeneric{..} = case shifted `compare` 0 of
     LT -> OpponentWin
   where
     diff = fromEnum player - fromEnum opponent
+    -- we do (+ 1) >>> (`mod` 3) >>> (- 1) to get diff as
+    -- one of {-1, 0, 1} mod 3.
     shifted = mod (diff + 1) 3 - 1
 
 scoreMove :: Move -> Int
@@ -86,14 +88,13 @@ decrypt1 enc = MkGeneric
 
 decrypt2 :: Encrypted -> Round
 decrypt2 enc = MkGeneric
-    { player = toEnum play
-    , opponent = toEnum opp }
-  where
-    opp = fromEnum $ opponent enc
-    play = case player enc of
+    { player = toEnum $ case player enc of
         X -> (opp - 1) `mod` 3  -- lose
         Y -> opp                -- draw
         Z -> (opp + 1) `mod` 3  -- win
+    , opponent = toEnum opp }
+  where
+    opp = fromEnum $ opponent enc
 
 part1 :: Vector Encrypted -> Int
 part1 = Vec.map (decrypt1 >>> scoreRound) >>> Vec.sum
