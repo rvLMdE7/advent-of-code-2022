@@ -61,6 +61,7 @@ library
     exposed-modules:
         , Common
         , Day01
+        , Day02
 
 common common-exe-options
     import: common-runtime-options
@@ -69,6 +70,11 @@ common common-exe-options
 executable day-01
     import: common-exe-options
     mixins: adventofcode2022 (Day01 as Day)
+    main-is: Run.hs
+
+executable day-02
+    import: common-exe-options
+    mixins: adventofcode2022 (Day02 as Day)
     main-is: Run.hs
 
 
@@ -81,6 +87,7 @@ library adventofcode2022-tests
         , tasty-hunit ^>=0.10.0
     exposed-modules:
         , Test01
+        , Test02
 
 common common-test-options
     import: common-runtime-options
@@ -89,5 +96,11 @@ common common-test-options
 test-suite test-01
     import: common-test-options
     mixins: adventofcode2022-tests (Test01 as Test)
+    main-is: Spec.hs
+    type: exitcode-stdio-1.0
+
+test-suite test-02
+    import: common-test-options
+    mixins: adventofcode2022-tests (Test02 as Test)
     main-is: Spec.hs
     type: exitcode-stdio-1.0
