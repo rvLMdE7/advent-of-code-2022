@@ -84,8 +84,22 @@ decrypt1 enc = MkGeneric
     { player = toEnum $ fromEnum $ player enc
     , opponent = toEnum $ fromEnum $ opponent enc }
 
+decrypt2 :: Encrypted -> Round
+decrypt2 enc = MkGeneric
+    { player = toEnum play
+    , opponent = toEnum opp }
+  where
+    opp = fromEnum $ opponent enc
+    play = case player enc of
+        X -> (opp - 1) `mod` 3  -- lose
+        Y -> opp                -- draw
+        Z -> (opp + 1) `mod` 3  -- win
+
 part1 :: Vector Encrypted -> Int
 part1 = Vec.map (decrypt1 >>> scoreRound) >>> Vec.sum
+
+part2 :: Vector Encrypted -> Int
+part2 = Vec.map (decrypt2 >>> scoreRound) >>> Vec.sum
 
 main :: IO ()
 main = do
@@ -94,3 +108,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right guide -> do
             print $ part1 guide
+            print $ part2 guide

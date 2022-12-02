@@ -19,7 +19,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 guide :: Vector Encrypted
 guide = Vec.fromList
@@ -34,3 +34,11 @@ part1Tests = Tasty.testGroup "part 1 tests"
             @?= Vec.fromList [8, 1, 6]
     , HUnit.testCase "total score" $
         Day02.part1 guide @?= 15 ]
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "each round's score" $
+        Vec.map (Day02.decrypt2 >>> Day02.scoreRound) guide
+            @?= Vec.fromList [4, 1, 7]
+    , HUnit.testCase "total score" $
+        Day02.part2 guide @?= 12 ]
