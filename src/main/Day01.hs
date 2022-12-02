@@ -31,7 +31,7 @@ part2 = fmap Vec.sum
 main :: IO ()
 main = do
     text <- readInputFileUtf8 "input/day-01.txt"
-    case Parse.runParser parseInput "day-01" text of
+    case Parse.runParser (parseInput <* Parse.eof) "day-01" text of
         Left err -> die $ Parse.errorBundlePretty err
         Right calories -> do
             print $ part1 calories
