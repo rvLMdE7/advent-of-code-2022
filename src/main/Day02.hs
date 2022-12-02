@@ -19,10 +19,17 @@ data Opponent = A | B | C
 data Player = X | Y | Z
     deriving (Bounded, Enum, Eq, Ord, Show)
 
-data Round = MkRound
-    { opponent :: Opponent
-    , player :: Player }
+data Generic o p = MkGeneric
+    { opponent :: o
+    , player :: p }
     deriving (Eq, Ord, Show)
+
+data Move = Rock | Paper | Scissors
+    deriving (Bounded, Enum, Eq, Ord, Show)
+
+type Encrypted = Generic Opponent Player
+
+type Round = Generic Move Move
 
 data Outcome = OpponentWin | Draw | PlayerWin
     deriving (Bounded, Enum, Eq, Ord, Show)
@@ -39,13 +46,13 @@ parsePlayer = asum
     , Y <$ Parse.single 'Y'
     , Z <$ Parse.single 'Z' ]
 
-parseRound :: Parser Round
+parseRound :: Parser Encrypted
 parseRound = do
     opponent <- parseOpponent <* Parse.Char.hspace
     player <- parsePlayer
-    pure $ MkRound{..}
+    pure $ MkGeneric{..}
 
-parseGuide :: Parser (Vector Round)
+parseGuide :: Parser (Vector Encrypted)
 parseGuide = Vec.fromList <$> Parse.sepEndBy parseRound Parse.Char.eol
 
 -- | Thinking of each move as being in Z mod 3, we calculate whether the
@@ -55,7 +62,7 @@ parseGuide = Vec.fromList <$> Parse.sepEndBy parseRound Parse.Char.eol
 --   * opponent's move     => draw
 --   * opponent's move - 1 => opponent win
 outcome :: Round -> Outcome
-outcome MkRound{..} = case shifted `compare` 0 of
+outcome MkGeneric{..} = case shifted `compare` 0 of
     GT -> PlayerWin
     EQ -> Draw
     LT -> OpponentWin
@@ -63,17 +70,22 @@ outcome MkRound{..} = case shifted `compare` 0 of
     diff = fromEnum player - fromEnum opponent
     shifted = mod (diff + 1) 3 - 1
 
-scorePlayer :: Player -> Int
-scorePlayer play = fromEnum play + 1
+scoreMove :: Move -> Int
+scoreMove move = fromEnum move + 1
 
 scoreOutcome :: Outcome -> Int
 scoreOutcome out = fromEnum out * 3
 
 scoreRound :: Round -> Int
-scoreRound rnd = scorePlayer (player rnd) + scoreOutcome (outcome rnd)
+scoreRound rnd = scoreMove (player rnd) + scoreOutcome (outcome rnd)
 
-part1 :: Vector Round -> Int
-part1 = Vec.map scoreRound >>> Vec.sum
+decrypt1 :: Encrypted -> Round
+decrypt1 enc = MkGeneric
+    { player = toEnum $ fromEnum $ player enc
+    , opponent = toEnum $ fromEnum $ opponent enc }
+
+part1 :: Vector Encrypted -> Int
+part1 = Vec.map (decrypt1 >>> scoreRound) >>> Vec.sum
 
 main :: IO ()
 main = do
