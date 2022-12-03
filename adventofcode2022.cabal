@@ -42,6 +42,10 @@ common common-lib-options
         , megaparsec ^>=9.2.0
         , vector ^>=0.12.3
         , vector-algorithms ^>=0.8.0
+        , unordered-containers ^>=0.2.17
+        , interpolatedstring-perl6 ^>=1.0.2
+        -- 'pretty-simple' is just for interactive use / debugging
+        , pretty-simple ^>=4.0.0
 
 common common-runtime-options
     import:
@@ -62,6 +66,7 @@ library
         , Common
         , Day01
         , Day02
+        , Day03
 
 common common-exe-options
     import: common-runtime-options
@@ -77,6 +82,11 @@ executable day-02
     mixins: adventofcode2022 (Day02 as Day)
     main-is: Run.hs
 
+executable day-03
+    import: common-exe-options
+    mixins: adventofcode2022 (Day03 as Day)
+    main-is: Run.hs
+
 
 library adventofcode2022-tests
     import: common-lib-options
@@ -88,6 +98,7 @@ library adventofcode2022-tests
     exposed-modules:
         , Test01
         , Test02
+        , Test03
 
 common common-test-options
     import: common-runtime-options
@@ -102,5 +113,11 @@ test-suite test-01
 test-suite test-02
     import: common-test-options
     mixins: adventofcode2022-tests (Test02 as Test)
+    main-is: Spec.hs
+    type: exitcode-stdio-1.0
+
+test-suite test-03
+    import: common-test-options
+    mixins: adventofcode2022-tests (Test03 as Test)
     main-is: Spec.hs
     type: exitcode-stdio-1.0

@@ -8,10 +8,12 @@ module Common
     , readMaybe'
 
     , (<<$>>)
+    , duomap
     ) where
 
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
+import Data.Bifunctor (Bifunctor, bimap)
 import Data.ByteString qualified as Byte
 import Data.Text (Text)
 import Data.Text qualified as Text
@@ -40,3 +42,6 @@ readMaybe' = Text.unpack >>> readMaybe
 -- | Same as '<$>' but works inside two levels of functors.
 (<<$>>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
 f <<$>> xs = fmap f <$> xs
+
+duomap :: Bifunctor p => (a -> b) -> p a a -> p b b
+duomap f = bimap f f
