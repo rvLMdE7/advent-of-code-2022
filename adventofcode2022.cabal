@@ -11,7 +11,7 @@ extra-source-files: README.md
 data-files: input/*.txt
 
 
-common common-ghc-lib-options
+common common-ghc-options
     ghc-options:
         -Wall
         -Wincomplete-record-updates
@@ -33,7 +33,7 @@ common common-lang-options
 common common-lib-options
     import:
         , common-lang-options
-        , common-ghc-lib-options
+        , common-ghc-options
     build-depends:
         , base ^>=4.15.1
         , bytestring ^>=0.10.12
@@ -50,7 +50,7 @@ common common-lib-options
 common common-runtime-options
     import:
         , common-lang-options
-        , common-ghc-lib-options
+        , common-ghc-options
     hs-source-dirs: run
     build-depends: base
     ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
