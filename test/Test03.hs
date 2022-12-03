@@ -22,7 +22,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 example :: Vector Rucksack
 example = Vec.fromList
@@ -56,3 +56,14 @@ part1Tests = Tasty.testGroup "part 1 tests"
         \wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\n\
         \ttgJtRGJQctTZtZT\n\
         \CrZsJsPPZsGzwwsLwLmpwMDw\n"
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "badge for group 1" $
+        Day03.badge (bundled Vec.! 0) @?= Just 'r'
+    , HUnit.testCase "badge for group 2" $
+        Day03.badge (bundled Vec.! 1) @?= Just 'Z'
+    , HUnit.testCase "example total badge priority" $
+        Day03.part2 example @?= Just 70 ]
+  where
+    bundled = Day03.bundle3 example
