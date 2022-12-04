@@ -3,9 +3,11 @@
 module Day04 where
 
 import Control.Arrow ((>>>))
+import Control.Monad (unless)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vec
 import System.Exit (die)
+import Text.InterpolatedString.Perl6 (qq)
 import Text.Megaparsec qualified as Parse
 import Text.Megaparsec.Char qualified as Parse.Char
 import Text.Megaparsec.Char.Lexer qualified as Parse.Char.Lex
@@ -22,6 +24,7 @@ parseRange :: Parser Range
 parseRange = do
     begin <- Parse.Char.Lex.decimal <* Parse.single '-'
     end <- Parse.Char.Lex.decimal
+    unless (begin <= end) $ fail [qq|begin $begin greater than end $end|]
     pure $ MkRange{..}
 
 parseRangePair :: Parser (Range, Range)
