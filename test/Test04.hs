@@ -21,7 +21,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 example :: Vector (Range, Range)
 example = Vec.fromList
@@ -49,3 +49,9 @@ part1Tests = Tasty.testGroup "part 1 tests"
         \2-8,3-7\n\
         \6-6,4-6\n\
         \2-6,4-8\n"
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "overlaps" $
+        Vec.map (uncurry Day04.overlap) example
+            @?= Vec.fromList [False, False, True, True, True, True] ]

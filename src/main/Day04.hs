@@ -42,8 +42,16 @@ fullyContains big small = (begin big <= begin small) && (end small <= end big)
 nested :: Range -> Range -> Bool
 nested one two = (one `fullyContains` two) || (two `fullyContains` one)
 
+overlap :: Range -> Range -> Bool
+overlap one two = go one two || go two one
+  where
+    go a b = (begin b <= begin a) && (begin a <= end b)
+
 part1 :: Vector (Range, Range) -> Int
 part1 = Vec.filter (uncurry nested) >>> Vec.length
+
+part2 :: Vector (Range, Range) -> Int
+part2 = Vec.filter (uncurry overlap) >>> Vec.length
 
 main :: IO ()
 main = do
@@ -52,3 +60,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right rangePairs -> do
             print $ part1 rangePairs
+            print $ part2 rangePairs
