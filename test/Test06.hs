@@ -20,7 +20,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 part1Tests :: TestTree
 part1Tests = Tasty.testGroup "part 1 tests"
@@ -36,3 +36,18 @@ part1Tests = Tasty.testGroup "part 1 tests"
         markerEnd "zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw" @?= Just 11 ]
   where
     markerEnd = Text.Enc.encodeUtf8 >>> Day06.endOfPacketMarker
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "example 1" $
+        messageStart "mjqjpqmgbljsphdztnvjfqwrcgsmlb" @?= Just 19
+    , HUnit.testCase "example 2" $
+        messageStart "bvwbjplbgvbhsrlpgdmjqwftvncz" @?= Just 23
+    , HUnit.testCase "example 3" $
+        messageStart "nppdvjthqldpwncqszvftbrmjlhg" @?= Just 23
+    , HUnit.testCase "example 4" $
+        messageStart "nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg" @?= Just 29
+    , HUnit.testCase "example 5" $
+        messageStart "zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw" @?= Just 26 ]
+  where
+    messageStart = Text.Enc.encodeUtf8 >>> Day06.endOfMessageMarker

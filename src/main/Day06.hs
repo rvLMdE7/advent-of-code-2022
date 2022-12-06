@@ -15,14 +15,23 @@ distinct = go Set.empty
         []     -> True
         x : xs -> (x `Set.notMember` seen) && go (Set.insert x seen) xs
 
+startOfMessageMarker :: ByteString -> Maybe Int
+startOfMessageMarker = firstDistinctN 14
+
 startOfPacketMarker :: ByteString -> Maybe Int
-startOfPacketMarker = go 0
+startOfPacketMarker = firstDistinctN 4
+
+firstDistinctN :: Int -> ByteString -> Maybe Int
+firstDistinctN n = go 0
   where
     go :: Int -> ByteString -> Maybe Int
     go !i bytes
-        | Bytes.length bytes < 4 = Nothing
-        | distinct $ Bytes.unpack $ Bytes.take 4 bytes = Just i
+        | Bytes.length bytes < n = Nothing
+        | distinct $ Bytes.unpack $ Bytes.take n bytes = Just i
         | otherwise = go (i + 1) (Bytes.drop 1 bytes)
+
+endOfMessageMarker :: ByteString -> Maybe Int
+endOfMessageMarker bytes = (+ 14) <$> startOfMessageMarker bytes
 
 endOfPacketMarker :: ByteString -> Maybe Int
 endOfPacketMarker bytes = (+ 4) <$> startOfPacketMarker bytes
@@ -30,7 +39,11 @@ endOfPacketMarker bytes = (+ 4) <$> startOfPacketMarker bytes
 part1 :: ByteString -> Maybe Int
 part1 = endOfPacketMarker
 
+part2 :: ByteString -> Maybe Int
+part2 = endOfMessageMarker
+
 main :: IO ()
 main = do
     bytes <- Bytes.readFile "input/day-06.txt"
     part1 bytes & maybe "error: no packet marker" show & putStrLn
+    part2 bytes & maybe "error: no message marker" show & putStrLn
