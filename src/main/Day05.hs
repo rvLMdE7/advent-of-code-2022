@@ -11,6 +11,8 @@ import Data.Foldable (asum)
 import Data.Function ((&))
 import Data.List qualified as List
 import Data.Maybe qualified as Maybe
+import Data.Sequence (Seq((:<|)))
+import Data.Sequence qualified as Seq
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text.IO
@@ -27,6 +29,8 @@ import Text.Megaparsec.Char.Lexer qualified as Parse.Char.Lex
 import Common (Parser, isHSpace, readInputFileUtf8, show', (<<$>>))
 
 
+type Chars = Seq Char  -- for brevity
+
 singleHSpace :: Parser Char
 singleHSpace = Parse.satisfy isHSpace
 
@@ -41,10 +45,12 @@ parseRow = entry `Parse.sepBy` singleHSpace
         , Nothing <$ replicateM_ 3 singleHSpace ]
 
 {-# ANN parseRows ("HLint: ignore" :: Text) #-}
-parseRows :: Parser (Vector [Char])
+parseRows :: Parser (Vector Chars)
 parseRows = do
     rows <- Parse.try parseRow `Parse.sepEndBy` Parse.Char.eol
-    pure $ Vec.fromList $ fmap Maybe.catMaybes $ List.transpose rows
+    pure $ Vec.fromList $ fmap catMaybesSeq $ List.transpose rows
+  where
+    catMaybesSeq = Maybe.catMaybes >>> Seq.fromList
 
 -- | We don't care about the indices, as they should be equal to [1..n] for
 -- some n. So, this parser simply matches exactly that, in the expected
@@ -74,7 +80,7 @@ parseMove = do
 parseMoves :: Parser (Vector (Int, Int, Int))
 parseMoves = Vec.fromList <$> Parse.sepEndBy parseMove Parse.Char.eol
 
-parseInput :: Parser (Vector [Char], Vector (Int, Int, Int))
+parseInput :: Parser (Vector Chars, Vector (Int, Int, Int))
 parseInput = do
     stacks <- parseRows
     parseIndices <* many Parse.Char.eol
@@ -82,20 +88,20 @@ parseInput = do
     pure (stacks, moves)
 
 
-move1 :: Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
+move1 :: Int -> Int -> MVector s Chars -> ST s (Maybe Text)
 move1 from to stacks
     | not (inBounds from) = pure $ Just [qq|index from=$from out-of-bounds|]
     | not (inBounds to) = pure $ Just [qq|index to=$to out-of-bounds|]
     | otherwise = Vec.Mut.unsafeRead stacks from >>= \case
-        []     -> pure $ Just [qq|nothing to move at index from=$from|]
-        c : cs -> do
+        Seq.Empty -> pure $ Just [qq|nothing to move at index from=$from|]
+        c :<| cs  -> do
             Vec.Mut.unsafeWrite stacks from cs
-            Vec.Mut.unsafeModify stacks (c :) to
+            Vec.Mut.unsafeModify stacks (c :<|) to
             pure Nothing
   where
     inBounds i = (0 <= i) && (i < Vec.Mut.length stacks)
 
-moveN :: Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
+moveN :: Int -> Int -> Int -> MVector s Chars -> ST s (Maybe Text)
 moveN count from to stacks
     | count > 0 = move1 from to stacks >>= \case
         Nothing  -> moveN (count - 1) from to stacks
@@ -103,13 +109,13 @@ moveN count from to stacks
     | otherwise = pure Nothing
 
 -- | Like 'moveN', but preserves order when moving rather than reversing.
-moveN' :: Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
+moveN' :: Int -> Int -> Int -> MVector s Chars -> ST s (Maybe Text)
 moveN' count from to stacks
     | not (inBounds from) = pure $ Just [qq|index from=$from out-of-bounds|]
     | not (inBounds to) = pure $ Just [qq|index to=$to out-of-bounds|]
     | count <= 0 = pure Nothing
     | otherwise = do
-        (transfer, keep) <- List.splitAt count <$> Vec.Mut.read stacks from
+        (transfer, keep) <- Seq.splitAt count <$> Vec.Mut.read stacks from
         if length transfer == count
             then do
                 Vec.Mut.write stacks from keep
@@ -120,9 +126,9 @@ moveN' count from to stacks
     inBounds i = (0 <= i) && (i < Vec.Mut.length stacks)
 
 applyST
-    :: (Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text))
+    :: (Int -> Int -> Int -> MVector s Chars -> ST s (Maybe Text))
     -> Vector (Int, Int, Int)
-    -> MVector s [Char]
+    -> MVector s Chars
     -> ST s (Maybe Text)
 applyST move moves stacks = Vec.ifoldM' go Nothing moves
   where
@@ -133,28 +139,28 @@ applyST move moves stacks = Vec.ifoldM' go Nothing moves
             in  msg <<$>> move count from to stacks
 
 apply
-    :: (forall s. Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text))
+    :: (forall s. Int -> Int -> Int -> MVector s Chars -> ST s (Maybe Text))
     -> Vector (Int, Int, Int)
-    -> Vector [Char]
-    -> Either Text (Vector [Char])
+    -> Vector Chars
+    -> Either Text (Vector Chars)
 apply move moves stacks = runST $ do
     mut <- Vec.thaw stacks
     applyST move moves mut >>= \case
         Nothing  -> Right <$> Vec.freeze mut
         Just err -> pure $ Left err
 
-topOfStacks :: Vector [Char] -> Either Text (Vector Char)
+topOfStacks :: Vector Chars -> Either Text (Vector Char)
 topOfStacks = traverse listToEither
   where
     listToEither = \case
-        []    -> Left "can't get top of empty stack"
-        c : _ -> Right c
+        Seq.Empty -> Left "can't get top of empty stack"
+        c :<| _   -> Right c
 
 
-part1 :: Vector (Int, Int, Int) -> Vector [Char] -> Either Text (Vector Char)
+part1 :: Vector (Int, Int, Int) -> Vector Chars -> Either Text (Vector Char)
 part1 moves stacks = apply moveN moves stacks >>= topOfStacks
 
-part2 :: Vector (Int, Int, Int) -> Vector [Char] -> Either Text (Vector Char)
+part2 :: Vector (Int, Int, Int) -> Vector Chars -> Either Text (Vector Char)
 part2 moves stacks = apply moveN' moves stacks >>= topOfStacks
 
 main :: IO ()

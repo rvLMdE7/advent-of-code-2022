@@ -11,6 +11,7 @@ import Test.Tasty.HUnit qualified as HUnit
 import Text.Megaparsec qualified as Parse
 
 import Day05 qualified
+import Day05 (Chars)
 
 
 main :: IO ()
@@ -22,7 +23,7 @@ tests = Tasty.testGroup "tests" [unitTests]
 unitTests :: TestTree
 unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
-exampleStacks :: Vector [Char]
+exampleStacks :: Vector Chars
 exampleStacks = Vec.fromList ["NZ", "DCM", "P"]
 
 exampleMoves :: Vector (Int, Int, Int)
