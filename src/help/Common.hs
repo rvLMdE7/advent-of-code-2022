@@ -6,6 +6,7 @@ module Common
 
     , show'
     , readMaybe'
+    , isHSpace
 
     , (<<$>>)
     , duomap
@@ -15,6 +16,7 @@ import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Bifunctor (Bifunctor, bimap)
 import Data.ByteString qualified as Byte
+import Data.Char qualified as Char
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text.Enc
@@ -45,3 +47,6 @@ f <<$>> xs = fmap f <$> xs
 
 duomap :: Bifunctor p => (a -> b) -> p a a -> p b b
 duomap f = bimap f f
+
+isHSpace :: Char -> Bool
+isHSpace c = Char.isSpace c && (c /= '\n') && (c /= '\r')
