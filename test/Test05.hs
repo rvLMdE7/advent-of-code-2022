@@ -20,7 +20,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 exampleStacks :: Vector [Char]
 exampleStacks = Vec.fromList ["NZ", "DCM", "P"]
@@ -34,7 +34,7 @@ part1Tests = Tasty.testGroup "part 1 tests"
         Parse.runParser Day05.parseInput "test" text
             @?= Right (exampleStacks, exampleMoves)
     , HUnit.testCase "perform moves" $
-        Day05.apply exampleMoves exampleStacks
+        Day05.apply Day05.moveN exampleMoves exampleStacks
             @?= Right (Vec.fromList ["C", "M", "ZNDP"])
     , HUnit.testCase "check top of stacks" $
         Day05.part1 exampleMoves exampleStacks
@@ -50,3 +50,9 @@ part1Tests = Tasty.testGroup "part 1 tests"
         \move 3 from 1 to 3\n\
         \move 2 from 2 to 1\n\
         \move 1 from 1 to 2\n"
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "check top of stacks" $
+        Day05.part2 exampleMoves exampleStacks
+            @?= Right (Vec.fromList "MCD") ]

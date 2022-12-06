@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Day05 where
 
@@ -81,8 +82,8 @@ parseInput = do
     pure (stacks, moves)
 
 
-move :: Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
-move from to stacks
+move1 :: Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
+move1 from to stacks
     | not (inBounds from) = pure $ Just [qq|index from=$from out-of-bounds|]
     | not (inBounds to) = pure $ Just [qq|index to=$to out-of-bounds|]
     | otherwise = Vec.Mut.unsafeRead stacks from >>= \case
@@ -96,24 +97,49 @@ move from to stacks
 
 moveN :: Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
 moveN count from to stacks
-    | count > 0 = move from to stacks >>= \case
+    | count > 0 = move1 from to stacks >>= \case
         Nothing  -> moveN (count - 1) from to stacks
         Just err -> pure $ Just [qq|error with count=$count to-go: $err|]
     | otherwise = pure Nothing
 
-applyST :: Vector (Int, Int, Int) -> MVector s [Char] -> ST s (Maybe Text)
-applyST moves stacks = Vec.ifoldM' go Nothing moves
+-- | Like 'moveN', but preserves order when moving rather than reversing.
+moveN' :: Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text)
+moveN' count from to stacks
+    | not (inBounds from) = pure $ Just [qq|index from=$from out-of-bounds|]
+    | not (inBounds to) = pure $ Just [qq|index to=$to out-of-bounds|]
+    | count <= 0 = pure Nothing
+    | otherwise = do
+        (transfer, keep) <- List.splitAt count <$> Vec.Mut.read stacks from
+        if length transfer == count
+            then do
+                Vec.Mut.write stacks from keep
+                Vec.Mut.modify stacks (transfer <>) to
+                pure Nothing
+            else pure $ Just [qq|not enough values at index from=$from|]
+  where
+    inBounds i = (0 <= i) && (i < Vec.Mut.length stacks)
+
+applyST
+    :: (Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text))
+    -> Vector (Int, Int, Int)
+    -> MVector s [Char]
+    -> ST s (Maybe Text)
+applyST move moves stacks = Vec.ifoldM' go Nothing moves
   where
     go err i (count, from, to) = case err of
         Just _  -> pure err
         Nothing ->
             let msg e = [qq|error on move $i: $e|]
-            in  msg <<$>> moveN count from to stacks
+            in  msg <<$>> move count from to stacks
 
-apply :: Vector (Int, Int, Int) -> Vector [Char] -> Either Text (Vector [Char])
-apply moves stacks = runST $ do
+apply
+    :: (forall s. Int -> Int -> Int -> MVector s [Char] -> ST s (Maybe Text))
+    -> Vector (Int, Int, Int)
+    -> Vector [Char]
+    -> Either Text (Vector [Char])
+apply move moves stacks = runST $ do
     mut <- Vec.thaw stacks
-    applyST moves mut >>= \case
+    applyST move moves mut >>= \case
         Nothing  -> Right <$> Vec.freeze mut
         Just err -> pure $ Left err
 
@@ -126,7 +152,10 @@ topOfStacks = traverse listToEither
 
 
 part1 :: Vector (Int, Int, Int) -> Vector [Char] -> Either Text (Vector Char)
-part1 moves stacks = apply moves stacks >>= topOfStacks
+part1 moves stacks = apply moveN moves stacks >>= topOfStacks
+
+part2 :: Vector (Int, Int, Int) -> Vector [Char] -> Either Text (Vector Char)
+part2 moves stacks = apply moveN' moves stacks >>= topOfStacks
 
 main :: IO ()
 main = do
@@ -135,5 +164,8 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right (stacks, moves) -> do
             part1 moves stacks
+                & either id (Vec.toList >>> Text.pack)
+                & Text.IO.putStrLn
+            part2 moves stacks
                 & either id (Vec.toList >>> Text.pack)
                 & Text.IO.putStrLn
