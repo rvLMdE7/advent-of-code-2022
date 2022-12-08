@@ -17,7 +17,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 example :: Matrix Int
 example = Vec.fromList $ fmap Vec.fromList
@@ -31,3 +31,8 @@ part1Tests :: TestTree
 part1Tests = Tasty.testGroup "part 1 tests"
     [ HUnit.testCase "example # visible" $
         Day08.part1 example @?= 21 ]
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "example max scenic score" $
+        Day08.part2 example @?= 8 ]

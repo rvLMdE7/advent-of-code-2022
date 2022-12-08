@@ -47,6 +47,7 @@ common common-lib-options
         -- 'pretty-simple' is just for interactive use / debugging
         , pretty-simple ^>=4.0.0
         , containers ^>=0.6.4
+        , linear ^>=1.21.10
 
 common common-runtime-options
     import:
