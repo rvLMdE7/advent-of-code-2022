@@ -7,7 +7,7 @@ module Day09 where
 import Control.Arrow ((>>>))
 import Control.Monad (replicateM_)
 import Control.Monad.Trans.State (State, execState)
-import Data.Foldable (asum)
+import Data.Foldable (asum, for_)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.Set qualified as Set
@@ -15,7 +15,7 @@ import Data.Vector (Vector)
 import Data.Vector qualified as Vec
 import GHC.Generics (Generic)
 import Linear (V2(V2))
-import Optics (use)
+import Optics (use, _last, preuse, ix, atraversal, view, set, (%))
 import Optics.State.Operators ((%=))
 import System.Exit (die)
 import Text.Megaparsec qualified as Parse
@@ -35,7 +35,7 @@ data Move = MkMove
 
 data Knot = MkKnot
     { headPos :: V2 Int
-    , tailPos :: V2 Int
+    , bodyPos :: Vector (V2 Int)
     , tailGhost :: Set (V2 Int) }
     deriving (Eq, Generic, Ord, Show)
 
@@ -66,29 +66,39 @@ applyDir :: Direction -> State Knot ()
 applyDir dir = do
     #headPos += dirToVec dir
 
-    delta <- (-) <$> use #headPos <*> use #tailPos
-    case delta of
-        -- straight
-        V2   2    0  -> #tailPos += V2   1    0
-        V2   0    2  -> #tailPos += V2   0    1
-        V2 (-2)   0  -> #tailPos += V2 (-1)   0
-        V2   0  (-2) -> #tailPos += V2   0  (-1)
+    len <- Vec.length <$> use #bodyPos
+    let headPosAff = atraversal (Right . view #headPos) (flip $ set #headPos)
+        base = [ #bodyPos % ix i | i <- [0 .. len-1] ]
+        sliding = zip (headPosAff : base) base
 
-        -- diagonal
-        V2   2    1  -> #tailPos += V2   1    1
-        V2   2  (-1) -> #tailPos += V2   1  (-1)
-        V2 (-2)   1  -> #tailPos += V2 (-1)   1
-        V2 (-2) (-1) -> #tailPos += V2 (-1) (-1)
-        V2   1    2  -> #tailPos += V2   1    1
-        V2 (-1)   2  -> #tailPos += V2 (-1)   1
-        V2   1  (-2) -> #tailPos += V2   1  (-1)
-        V2 (-1) (-2) -> #tailPos += V2 (-1) (-1)
+    for_ sliding $ \(one, two) -> do
+        one' <- preuse one
+        two' <- preuse two
+        case (-) <$> one' <*> two' of
+            Nothing    -> pure ()
+            Just delta -> case delta of
+                -- straight
+                V2   2    0  -> two += V2   1    0
+                V2   0    2  -> two += V2   0    1
+                V2 (-2)   0  -> two += V2 (-1)   0
+                V2   0  (-2) -> two += V2   0  (-1)
 
-        -- within 1 tile
-        _ -> pure ()
+                -- diagonal
+                V2   2    1  -> two += V2   1    1
+                V2   2  (-1) -> two += V2   1  (-1)
+                V2 (-2)   1  -> two += V2 (-1)   1
+                V2 (-2) (-1) -> two += V2 (-1) (-1)
+                V2   1    2  -> two += V2   1    1
+                V2 (-1)   2  -> two += V2 (-1)   1
+                V2   1  (-2) -> two += V2   1  (-1)
+                V2 (-1) (-2) -> two += V2 (-1) (-1)
 
-    new <- use #tailPos
-    #tailGhost %= Set.insert new
+                -- within 1 tile
+                _ -> pure ()
+
+    preuse (#bodyPos % _last) >>= \case
+        Nothing  -> pure ()
+        Just new -> #tailGhost %= Set.insert new
 
 applyMove :: Move -> State Knot ()
 applyMove MkMove{..} = replicateM_ distance (applyDir direction)
@@ -96,16 +106,19 @@ applyMove MkMove{..} = replicateM_ distance (applyDir direction)
 applyMoves :: Vector Move -> State Knot ()
 applyMoves = Vec.foldM'_ (const applyMove) ()
 
-runMoves :: Vector Move -> Knot
-runMoves = applyMoves >>> flip execState initState
+runMoves :: Int -> Vector Move -> Knot
+runMoves n = applyMoves >>> flip execState initState
   where
     initState = MkKnot
-        { headPos = pure 0
-        , tailPos = pure 0
-        , tailGhost = Set.singleton (pure 0) }
+        { headPos = V2 0 0
+        , bodyPos = Vec.replicate n $ V2 0 0
+        , tailGhost = Set.singleton $ V2 0 0 }
 
 part1 :: Vector Move -> Int
-part1 = runMoves >>> tailGhost >>> Set.size
+part1 = runMoves 1 >>> tailGhost >>> Set.size
+
+part2 :: Vector Move -> Int
+part2 = runMoves 10 >>> tailGhost >>> Set.size
 
 main :: IO ()
 main = do
@@ -114,3 +127,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right moves -> do
             print $ part1 moves
+            print $ part2 moves
