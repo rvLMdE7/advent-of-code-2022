@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Common
     ( Parser
 
@@ -10,10 +12,13 @@ module Common
 
     , (<<$>>)
     , duomap
+
+    , (+=)
     ) where
 
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
+import Control.Monad.State (MonadState)
 import Data.Bifunctor (Bifunctor, bimap)
 import Data.ByteString qualified as Byte
 import Data.Char qualified as Char
@@ -21,6 +26,8 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text.Enc
 import Data.Void (Void)
+import Optics (Is, A_Setter, Optic')
+import Optics.State.Operators ((%=))
 import Text.Megaparsec (Parsec)
 import Text.Read (readMaybe)
 
@@ -50,3 +57,6 @@ duomap f = bimap f f
 
 isHSpace :: Char -> Bool
 isHSpace c = Char.isSpace c && (c /= '\n') && (c /= '\r')
+
+(+=) :: (Is k A_Setter, MonadState s m, Num a) => Optic' k is s a -> a -> m ()
+optic += x = optic %= (+ x)
