@@ -43,13 +43,14 @@ moveAtBy at by list = case by `compare` 0 of
         (left, Seq.Empty) -> left
     EQ -> list
 
-mix :: Seq Int -> Seq Int
-mix list = list & Seq.zip (Seq.fromFunction len id) & loop 0 & fmap snd
+mixN :: Int -> Seq (Int, Int) -> Seq Int
+mixN n list = list & loop 0 0 & fmap snd
   where
-    loop iter
-        | iter < len = mixNum iter >>> loop (iter + 1)
-        | otherwise  = id
-    mixNum iter prev = moveAtByLoop numIx num prev
+    loop iter run
+        | iter < len  = mix iter >>> loop (iter + 1) run
+        | run + 1 < n = loop 0 (run + 1)
+        | otherwise   = id
+    mix iter prev = moveAtByLoop numIx num prev
       where
         numIx = fromJust $ Seq.findIndexL (fst >>> (==) iter) prev
         (_, num) = prev `Seq.index` numIx
@@ -60,7 +61,18 @@ part1 list = sum $ do
     i <- [1000, 2000, 3000]
     pure $ mixed `indexLoop` (zeroIx + i)
   where
-    mixed = mix list
+    indexed = Seq.fromFunction (Seq.length list) id `Seq.zip` list
+    mixed = mixN 1 indexed
+    zeroIx = fromJust $ Seq.elemIndexL 0 mixed
+
+part2 :: Seq Int -> Int
+part2 list = sum $ do
+    i <- [1000, 2000, 3000]
+    pure $ mixed `indexLoop` (zeroIx + i)
+  where
+    mul n = n * 811_589_153
+    decrypted = Seq.fromFunction (Seq.length list) id `Seq.zip` (mul <$> list)
+    mixed = mixN 10 decrypted
     zeroIx = fromJust $ Seq.elemIndexL 0 mixed
 
 main :: IO ()
@@ -70,3 +82,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right list -> do
             print $ part1 list
+            print $ part2 list

@@ -18,7 +18,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 part1Tests :: TestTree
 part1Tests = Tasty.testGroup "part 1 tests" $ do
@@ -40,3 +40,9 @@ part1Tests = Tasty.testGroup "part 1 tests" $ do
         let nextIndex = Seq.elemIndexL (head raw `Seq.index` i) list
         pure (fromJust nextIndex, list)
     mixAtIndex i xs = Day20.moveAtByLoop i (xs `Seq.index` i) xs
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "example" $
+        Day20.part2 (Seq.fromList [1, 2, -3, 3, -2, 0, 4])
+            @?= 1_623_178_306 ]
