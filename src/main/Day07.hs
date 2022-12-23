@@ -17,7 +17,7 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Tree (Tree, Forest)
 import Data.Tree qualified as Tree
-import Optics ((&), (%~), (%), ix)
+import Optics ((&), (%~), (%), ix, preview)
 import System.Exit (die)
 import Text.Megaparsec qualified as Parse
 import Text.Megaparsec.Char qualified as Parse.Char
@@ -124,19 +124,33 @@ fileSize = \case
     Dir _       -> 0
     File size _ -> size
 
-dirsWithSize :: (Int -> Bool) -> Tree FileObj -> [(Text, Int)]
-dirsWithSize f = annDirSizes >>> Tree.flatten >>> mapMaybe test
+dirsSized :: (i -> Bool) -> Tree (i, FileObj) -> [(Text, i)]
+dirsSized f = Tree.flatten >>> mapMaybe test
   where
     test = \case
         (size, Dir name) | f size -> Just (name, size)
         _                         -> Nothing
+
+dirsToDelUpdate :: Int -> Int -> Tree FileObj -> [(Text, Int)]
+dirsToDelUpdate total needed tree =
+    List.sortOn snd $ dirsSized (>= minToFree) annotated
+  where
+    annotated = annDirSizes tree
+    minToFree = max 0 $ used - total + needed
+    used = fst $ Tree.rootLabel annotated
 
 
 showTree' :: Show a => Tree a -> Text
 showTree' = fmap show >>> Tree.drawTree >>> Text.pack
 
 part1 :: Tree FileObj -> Int
-part1 = dirsWithSize (<= 100_000) >>> fmap snd >>> sum
+part1 = annDirSizes >>> dirsSized (<= 100_000) >>> fmap snd >>> sum
+
+part2 :: Tree FileObj -> Int
+part2 = dirsToDelUpdate total needed >>> preview (ix 0) >>> maybe 0 snd
+  where
+    total = 70_000_000
+    needed = 30_000_000
 
 main :: IO ()
 main = do
@@ -146,3 +160,4 @@ main = do
         Right inputs -> do
             let fileTree = inferFileTree inputs
             print $ part1 fileTree
+            print $ part2 fileTree

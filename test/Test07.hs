@@ -21,7 +21,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 exampleFileTree :: Tree FileObj
 exampleFileTree =
@@ -45,15 +45,16 @@ part1Tests = Tasty.testGroup "part 1 tests"
     [ HUnit.testCase "make filetree from cmd outputs" $
         fmap Day07.inferFileTree tryParse @?= Right exampleFileTree
     , HUnit.testCase "recursive dir sizes" $
-        Day07.dirsWithSize (const True) exampleFileTree @?=
+        Day07.dirsSized (const True) exampleSized @?=
             [ ("/", 48381165)
             , ("a", 94853)
             , ("e", 584)
             , ("d", 24933642) ]
     , HUnit.testCase "dirs smaller than 100,000" $
-        fmap fst (Day07.dirsWithSize (<= 100_000) exampleFileTree)
+        fmap fst (Day07.dirsSized (<= 100_000) exampleSized)
             @?= ["a", "e"] ]
   where
+    exampleSized = Day07.annDirSizes exampleFileTree
     tryParse = Parse.runParser (Day07.parseInput <* Parse.eof) "day-07"
         "$ cd /\n\
         \$ ls\n\
@@ -78,3 +79,13 @@ part1Tests = Tasty.testGroup "part 1 tests"
         \8033020 d.log\n\
         \5626152 d.ext\n\
         \7214296 k\n"
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "dirs to delete" $
+        Day07.dirsToDelUpdate total needed exampleFileTree @?=
+            [ ("d", 24933642)
+            , ("/", 48381165) ] ]
+  where
+    total = 70_000_000
+    needed = 30_000_000
