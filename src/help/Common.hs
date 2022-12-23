@@ -10,6 +10,8 @@ module Common
     , readMaybe'
     , isHSpace
 
+    , cons
+
     , (<<$>>)
     , duomap
 
@@ -60,3 +62,6 @@ isHSpace c = Char.isSpace c && (c /= '\n') && (c /= '\r')
 
 (+=) :: (Is k A_Setter, MonadState s m, Num a) => Optic' k is s a -> a -> m ()
 optic += x = optic %= (+ x)
+
+cons :: a -> [a] -> [a]
+cons x xs = x : xs

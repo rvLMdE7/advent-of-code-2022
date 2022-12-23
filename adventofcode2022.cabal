@@ -149,6 +149,7 @@ library adventofcode2022-tests
         , Test04
         , Test05
         , Test06
+        , Test07
         , Test08
         , Test09
         , Test20
@@ -190,6 +191,12 @@ test-suite test-05
 test-suite test-06
     import: common-test-options
     mixins: adventofcode2022-tests (Test06 as Test)
+    main-is: Spec.hs
+    type: exitcode-stdio-1.0
+
+test-suite test-07
+    import: common-test-options
+    mixins: adventofcode2022-tests (Test07 as Test)
     main-is: Spec.hs
     type: exitcode-stdio-1.0
 
