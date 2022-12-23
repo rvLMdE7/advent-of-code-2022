@@ -75,6 +75,7 @@ library
         , Day04
         , Day05
         , Day06
+        , Day07
         , Day08
         , Day09
         , Day20
@@ -111,6 +112,11 @@ executable day-05
 executable day-06
     import: common-exe-options
     mixins: adventofcode2022 (Day06 as Day)
+    main-is: Run.hs
+
+executable day-07
+    import: common-exe-options
+    mixins: adventofcode2022 (Day07 as Day)
     main-is: Run.hs
 
 executable day-08
