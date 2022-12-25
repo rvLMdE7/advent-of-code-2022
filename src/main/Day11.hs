@@ -1,31 +1,43 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Day11 where
 
 import Control.Arrow ((>>>), (&&&))
-import Control.Monad (void)
-import Control.Monad.State (State)
-import Data.Foldable (asum)
+import Control.Monad (void, replicateM_)
+import Control.Monad.State (State, gets, execState)
+import Data.Foldable (asum, for_, traverse_)
+import Data.Foldable qualified as Fold
 import Data.IntMap (IntMap)
 import Data.IntMap qualified as IntMap
 import Data.List qualified as List
+import Data.Ord (Down(Down))
+import Data.Sequence (Seq((:|>)))
+import Data.Sequence qualified as Seq
 import Data.Text (Text)
 import Data.Text qualified as Text
-import Optics (use, _1)
+import GHC.Generics (Generic)
+import Optics ((%), use, at, mapped)
+import Optics.State.Operators ((.=), (%=))
 import System.Exit (die)
+import Text.InterpolatedString.Perl6 (qq)
 import Text.Megaparsec qualified as Parse
 import Text.Megaparsec.Char qualified as Parse.C
 import Text.Megaparsec.Char.Lexer qualified as Parse.CL
 
-import Common (Parser, readInputFileUtf8)
+import Common (Parser, (+=), readInputFileUtf8, show')
+import Prelude hiding (round)
 
 
 data Monkey = MkMonkey
     { number :: Int
-    , items :: [Int]
+    , items :: Seq Int
     , operation :: Int -> Int
-    , throwTo :: Int -> Int }
+    , throwTo :: Int -> Int
+    , inspected :: Int }
+    deriving (Generic)
 
 chunks :: Text -> Parser ()
 chunks = Text.words
@@ -38,10 +50,11 @@ parseNumber = do
     Parse.chunk "Monkey" *> Parse.C.hspace
     Parse.CL.decimal <* Parse.single ':'
 
-parseItems :: Parser [Int]
+parseItems :: Parser (Seq Int)
 parseItems = do
     Parse.C.hspace *> chunks "Starting items:" *> Parse.C.hspace
-    Parse.sepBy Parse.CL.decimal $ Parse.single ',' *> Parse.C.hspace
+    let comma = Parse.single ',' *> Parse.C.hspace
+    Seq.fromList <$> Parse.sepBy Parse.CL.decimal comma
 
 parseOperation :: Parser (Int -> Int)
 parseOperation =
@@ -79,17 +92,43 @@ parseMonkey = do
     items <- parseItems <* Parse.C.eol
     operation <- parseOperation <* Parse.C.eol
     throwTo <- parseThrowTo <* Parse.C.eol
-    pure $ MkMonkey{..}
+    pure $ let inspected = 0 in MkMonkey{..}
 
 parseMonkeys :: Parser (IntMap Monkey)
 parseMonkeys = mkMap <$> Parse.sepEndBy parseMonkey Parse.C.eol
   where
     mkMap = fmap (number &&& id) >>> IntMap.fromList
 
-turn :: State (Int, IntMap Monkey) ()
-turn = do
-    n <- use _1
-    pure ()
+turn :: Int -> State (IntMap Monkey) ()
+turn n = use (at n) >>= \case
+    Nothing -> pure ()
+    Just MkMonkey{..} -> do
+        at n % mapped % #items .= Seq.Empty
+        at n % mapped % #inspected += Seq.length items
+        for_ items $ \item -> do
+            let worry = operation item `div` 3
+            let dest = throwTo worry
+            at dest % mapped % #items %= (:|> worry)
+
+round :: State (IntMap Monkey) ()
+round = gets IntMap.keys >>= traverse_ turn
+
+showMonkeys :: IntMap Monkey -> Text
+showMonkeys assoc = Text.unlines $ do
+    (n, MkMonkey{..}) <- IntMap.toAscList assoc
+    let count = Text.justifyRight 3 ' ' $ show' inspected
+    pure $ mappend [qq|Monkey $n: inspected $count - |] $
+        Text.intercalate ", " $ do
+            item <- Fold.toList items
+            pure $ show' item
+
+part1 :: IntMap Monkey -> Int
+part1 = execState (replicateM_ 20 round)
+    >>> IntMap.elems
+    >>> fmap inspected
+    >>> List.sortOn Down
+    >>> take 2
+    >>> product
 
 main :: IO ()
 main = do
@@ -97,4 +136,4 @@ main = do
     case Parse.runParser (parseMonkeys <* Parse.eof) "day-11" text of
         Left err -> die $ Parse.errorBundlePretty err
         Right monkeys -> do
-            pure ()
+            print $ part1 monkeys
