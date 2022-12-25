@@ -27,7 +27,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 exampleMonkeys :: IntMap Monkey
 exampleMonkeys = IntMap.fromList
@@ -36,11 +36,13 @@ exampleMonkeys = IntMap.fromList
     , keyVal $ mkMonkey 2 [79, 60, 97] (^ id @Int 2) 13 (1, 3)
     , keyVal $ mkMonkey 3 [74] (+ 3) 17 (0, 1) ]
   where
-    mkMonkey num items op quotient (t, f) = Day11.MkMonkey
+    mkMonkey num items op modulus (t, f) = Day11.MkMonkey
         { number = num
         , items = Seq.fromList items
         , operation = op
-        , throwTo = \n -> if n `mod` quotient == 0 then t else f
+        , quotient = modulus
+        , true = t
+        , false = f
         , inspected = 0 }
     keyVal = Day11.number &&& id
 
@@ -83,7 +85,8 @@ part1Tests = Tasty.testGroup "part 1 tests"
         fmap Day11.inspected (IntMap.elems $ execRound 20)
             @?= [101, 95, 7, 105] ]
   where
-    execRound n = execState (replicateM_ n Day11.round) exampleMonkeys
+    execRound n = flip execState exampleMonkeys $
+        replicateM_ n $ Day11.round $ flip div 3
     reprMonkeys = IntMap.elems >>> fmap reprMonkey
     reprMonkey Day11.MkMonkey{..} = (number, Fold.toList items)
     text =
@@ -114,3 +117,28 @@ part1Tests = Tasty.testGroup "part 1 tests"
         \  Test: divisible by 17\n\
         \    If true: throw to monkey 0\n\
         \    If false: throw to monkey 1\n"
+
+{-# ANN part2Tests ("hlint: ignore" :: String) #-}
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "round 1" $
+        reprMonkeys (execRound 1)
+            @?= zip [0..] [2, 4, 3, 6]
+    , HUnit.testCase "round 20" $
+        reprMonkeys (execRound 20)
+            @?= zip [0..] [99, 97, 8, 103]
+    , HUnit.testCase "round 1000" $
+        reprMonkeys (execRound 1000)
+            @?= zip [0..] [5204, 4792, 199, 5192]
+    , HUnit.testCase "round 5000" $
+        reprMonkeys (execRound 5000)
+            @?= zip [0..] [26075, 23921, 974, 26000]
+    , HUnit.testCase "round 10000" $
+        reprMonkeys (execRound 10_000)
+            @?= zip [0..] [52166, 47830, 1938, 52013] ]
+  where
+    execRound n = flip execState exampleMonkeys $
+        replicateM_ n $ Day11.round $ flip mod modulus
+    modulus = product $ fmap Day11.quotient $ IntMap.elems exampleMonkeys
+    reprMonkeys = IntMap.elems >>> fmap reprMonkey
+    reprMonkey Day11.MkMonkey{..} = (number, inspected)

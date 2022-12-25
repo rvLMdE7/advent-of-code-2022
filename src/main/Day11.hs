@@ -19,7 +19,7 @@ import Data.Sequence qualified as Seq
 import Data.Text (Text)
 import Data.Text qualified as Text
 import GHC.Generics (Generic)
-import Optics ((%), use, at, mapped)
+import Optics ((%), (&), use, at, mapped)
 import Optics.State.Operators ((.=), (%=))
 import System.Exit (die)
 import Text.InterpolatedString.Perl6 (qq)
@@ -35,7 +35,9 @@ data Monkey = MkMonkey
     { number :: Int
     , items :: Seq Int
     , operation :: Int -> Int
-    , throwTo :: Int -> Int
+    , quotient :: Int
+    , true :: Int
+    , false :: Int
     , inspected :: Int }
     deriving (Generic)
 
@@ -76,7 +78,7 @@ parseOperation =
         [ (*) <$ Parse.single '*'
         , (+) <$ Parse.single '+' ]
 
-parseThrowTo :: Parser (Int -> Int)
+parseThrowTo :: Parser (Int, Int, Int)
 parseThrowTo = do
     Parse.C.hspace *> chunks "Test: divisible by"
     quotient <- Parse.C.hspace *> Parse.CL.decimal <* Parse.C.eol
@@ -84,14 +86,14 @@ parseThrowTo = do
     true <- Parse.C.hspace *> Parse.CL.decimal <* Parse.C.eol
     Parse.C.hspace *> chunks "If false: throw to monkey"
     false <- Parse.C.hspace *> Parse.CL.decimal
-    pure $ \n -> if n `mod` quotient == 0 then true else false
+    pure (quotient, true, false)
 
 parseMonkey :: Parser Monkey
 parseMonkey = do
     number <- parseNumber <* Parse.C.eol
     items <- parseItems <* Parse.C.eol
     operation <- parseOperation <* Parse.C.eol
-    throwTo <- parseThrowTo <* Parse.C.eol
+    (quotient, true, false) <- parseThrowTo <* Parse.C.eol
     pure $ let inspected = 0 in MkMonkey{..}
 
 parseMonkeys :: Parser (IntMap Monkey)
@@ -99,19 +101,19 @@ parseMonkeys = mkMap <$> Parse.sepEndBy parseMonkey Parse.C.eol
   where
     mkMap = fmap (number &&& id) >>> IntMap.fromList
 
-turn :: Int -> State (IntMap Monkey) ()
-turn n = use (at n) >>= \case
+turn :: (Int -> Int) -> Int -> State (IntMap Monkey) ()
+turn relief n = use (at n) >>= \case
     Nothing -> pure ()
     Just MkMonkey{..} -> do
         at n % mapped % #items .= Seq.Empty
         at n % mapped % #inspected += Seq.length items
         for_ items $ \item -> do
-            let worry = operation item `div` 3
-            let dest = throwTo worry
+            let worry = relief $ operation item
+            let dest = if worry `mod` quotient == 0 then true else false
             at dest % mapped % #items %= (:|> worry)
 
-round :: State (IntMap Monkey) ()
-round = gets IntMap.keys >>= traverse_ turn
+round :: (Int -> Int) -> State (IntMap Monkey) ()
+round relief = gets IntMap.keys >>= traverse_ (turn relief)
 
 showMonkeys :: IntMap Monkey -> Text
 showMonkeys assoc = Text.unlines $ do
@@ -123,12 +125,27 @@ showMonkeys assoc = Text.unlines $ do
             pure $ show' item
 
 part1 :: IntMap Monkey -> Int
-part1 = execState (replicateM_ 20 round)
+part1 = execState prog
     >>> IntMap.elems
     >>> fmap inspected
     >>> List.sortOn Down
     >>> take 2
     >>> product
+  where
+    prog = replicateM_ 20 $ round $ flip div 3
+
+{-# ANN part2 ("hlint: ignore" :: Text) #-}
+part2 :: IntMap Monkey -> Int
+part2 monkeys = monkeys
+    & execState prog
+    & IntMap.elems
+    & fmap inspected
+    & List.sortOn Down
+    & take 2
+    & product
+  where
+    prog = replicateM_ 10_000 $ round $ flip mod modulus
+    modulus = product $ fmap quotient $ IntMap.elems monkeys
 
 main :: IO ()
 main = do
@@ -137,3 +154,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right monkeys -> do
             print $ part1 monkeys
+            print $ part2 monkeys
