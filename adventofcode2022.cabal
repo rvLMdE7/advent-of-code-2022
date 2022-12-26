@@ -52,6 +52,8 @@ common common-lib-options
         , mtl ^>=2.2.2
         , optics ^>=0.4.2
         , split ^>=0.2.3
+        , matrix ^>=0.3.6
+        , pqueue ^>=1.4.3
 
 common common-runtime-options
     import:
@@ -81,6 +83,7 @@ library
         , Day09
         , Day10
         , Day11
+        , Day12
         , Day20
 
 common common-exe-options
@@ -142,6 +145,11 @@ executable day-11
     mixins: adventofcode2022 (Day11 as Day)
     main-is: Run.hs
 
+executable day-12
+    import: common-exe-options
+    mixins: adventofcode2022 (Day12 as Day)
+    main-is: Run.hs
+
 executable day-20
     import: common-exe-options
     mixins: adventofcode2022 (Day20 as Day)
@@ -167,6 +175,7 @@ library adventofcode2022-tests
         , Test09
         , Test10
         , Test11
+        , Test12
         , Test20
 
 common common-test-options
@@ -236,6 +245,12 @@ test-suite test-10
 test-suite test-11
     import: common-test-options
     mixins: adventofcode2022-tests (Test11 as Test)
+    main-is: Spec.hs
+    type: exitcode-stdio-1.0
+
+test-suite test-12
+    import: common-test-options
+    mixins: adventofcode2022-tests (Test12 as Test)
     main-is: Spec.hs
     type: exitcode-stdio-1.0
 
