@@ -74,37 +74,38 @@ signalStrengthsAt = \case
         val <- gets regValue
         cons (val * n) <$> signalStrengthsAt ns
 
-pixelChar :: Int -> Int -> Char
-pixelChar num value =
+pixelChar :: Char -> Char -> Int -> Int -> Char
+pixelChar dark lit num value =
     if abs (value - mod (num - 1) 40) < 2
-        then '█'
-        else ' '
+        then lit
+        else dark
 
-runScreen :: State Cpu String
-runScreen = do
+showCRT :: Char -> Char -> State Cpu String
+showCRT dark lit = do
     (val, num) <- gets (regValue &&& cycleNum)
-    let char1 = pixelChar num val
-    let char2 = pixelChar (num + 1) val
+    let char1 = pixelChar dark lit num val
+    let char2 = pixelChar dark lit (num + 1) val
     gets remInstrs >>= \case
         Addx _ : _ -> do
             evalInstr
-            fmap (cons char1 <<< cons char2) runScreen
+            fmap (cons char1 <<< cons char2) (showCRT dark lit)
         Noop : _ -> do
             evalInstr
-            fmap (cons char1) runScreen
+            fmap (cons char1) (showCRT dark lit)
         [] -> pure ""
 
-part1 :: [Instr] -> Int
-part1 = MkCpu 1 1 >>> evalState prog >>> sum
-  where
-    prog = signalStrengthsAt [20, 60 .. 220]
-
-part2 :: [Instr] -> Text
-part2 = MkCpu 1 1
-    >>> evalState runScreen
+fullScreenCRT :: Char -> Char -> [Instr] -> Text
+fullScreenCRT dark lit = MkCpu 1 1
+    >>> evalState (showCRT dark lit)
     >>> chunksOf 40
     >>> fmap Text.pack
     >>> Text.unlines
+
+part1 :: [Instr] -> Int
+part1 = MkCpu 1 1 >>> evalState (signalStrengthsAt [20, 60 .. 220]) >>> sum
+
+part2 :: [Instr] -> Text
+part2 = fullScreenCRT ' ' '█'
 
 main :: IO ()
 main = do
