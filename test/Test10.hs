@@ -20,7 +20,7 @@ tests :: TestTree
 tests = Tasty.testGroup "tests" [unitTests]
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 exampleInstrs :: [Instr]
 exampleInstrs =
@@ -72,3 +72,14 @@ part1Tests = Tasty.testGroup "part 1 tests"
         \addx 15\naddx -21\naddx 22\naddx -6\naddx 1\nnoop\naddx 2\naddx 1\n\
         \noop\naddx -10\nnoop\nnoop\naddx 20\naddx 1\naddx 2\naddx 2\n\
         \addx -6\naddx -11\nnoop\nnoop\nnoop\n"
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "CRT" $
+        Day10.part2 exampleInstrs @?=
+            "██  ██  ██  ██  ██  ██  ██  ██  ██  ██  \n\
+            \███   ███   ███   ███   ███   ███   ███ \n\
+            \████    ████    ████    ████    ████    \n\
+            \█████     █████     █████     █████     \n\
+            \██████      ██████      ██████      ████\n\
+            \███████       ███████       ███████     \n" ]

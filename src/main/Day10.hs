@@ -5,9 +5,14 @@
 module Day10 where
 
 import Control.Applicative ((<|>))
-import Control.Arrow ((>>>))
+import Control.Arrow ((>>>), (&&&), (<<<))
 import Control.Monad (when, unless)
 import Control.Monad.State (State, gets, execState, put, evalState)
+import Data.Function ((&))
+import Data.List.Split (chunksOf)
+import Data.Text (Text)
+import Data.Text qualified as Text
+import Data.Text.IO qualified as Text.IO
 import GHC.Generics (Generic)
 import Optics.State.Operators ((.=))
 import System.Exit (die)
@@ -69,9 +74,37 @@ signalStrengthsAt = \case
         val <- gets regValue
         cons (val * n) <$> signalStrengthsAt ns
 
+pixelChar :: Int -> Int -> Char
+pixelChar num value =
+    if abs (value - mod (num - 1) 40) < 2
+        then '█'
+        else ' '
+
+runScreen :: State Cpu String
+runScreen = do
+    (val, num) <- gets (regValue &&& cycleNum)
+    let char1 = pixelChar num val
+    let char2 = pixelChar (num + 1) val
+    gets remInstrs >>= \case
+        Addx _ : _ -> do
+            evalInstr
+            fmap (cons char1 <<< cons char2) runScreen
+        Noop : _ -> do
+            evalInstr
+            fmap (cons char1) runScreen
+        [] -> pure ""
+
 part1 :: [Instr] -> Int
-part1 instrs = sum $ flip evalState (MkCpu 1 1 instrs) $
-    signalStrengthsAt [20, 60 .. 220]
+part1 = MkCpu 1 1 >>> evalState prog >>> sum
+  where
+    prog = signalStrengthsAt [20, 60 .. 220]
+
+part2 :: [Instr] -> Text
+part2 = MkCpu 1 1
+    >>> evalState runScreen
+    >>> chunksOf 40
+    >>> fmap Text.pack
+    >>> Text.unlines
 
 main :: IO ()
 main = do
@@ -79,4 +112,5 @@ main = do
     case Parse.runParser (parseInstrs <* Parse.eof) "day-10" text of
         Left err -> die $ Parse.errorBundlePretty err
         Right instrs -> do
-            print $ part1 instrs
+            part1 instrs & print
+            part2 instrs & Text.IO.putStr
