@@ -35,6 +35,12 @@ approach as:
 
 ### Stack
 
+Stack is not fully supported, but efforts have been made to do so. It doesn't
+support the use of backpack features such as mixins, but at time of writing
+it compiles with them nonetheless. There is a `stack.yaml` set up, and the
+version requirements in the `.cabal` file are compatible with the selected
+stack resolver.
+
 ```shell
 > stack build
 > stack run day-01
