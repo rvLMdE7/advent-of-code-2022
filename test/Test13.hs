@@ -48,11 +48,15 @@ lawTests = Tasty.testGroup "law tests"
 
 
 unitTests :: TestTree
-unitTests = Tasty.testGroup "unit tests" [part1Tests]
+unitTests = Tasty.testGroup "unit tests" [part1Tests, part2Tests]
 
 part1Tests :: TestTree
 part1Tests = Tasty.testGroup "part 1 tests"
     [ HUnit.testCase "example" $ Day13.part1 example @?= 13 ]
+
+part2Tests :: TestTree
+part2Tests = Tasty.testGroup "part 2 tests"
+    [ HUnit.testCase "example" $ Day13.part2 example @?= 140 ]
 
 
 example :: [(Input Int, Input Int)]

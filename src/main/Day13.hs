@@ -4,6 +4,9 @@ module Day13 where
 
 import Control.Arrow ((>>>))
 import Data.Foldable (asum)
+import Data.List qualified as List
+import Data.List.Extra (merge)
+import Data.Maybe (fromJust)
 import Data.Text (Text)
 import System.Exit (die)
 import Text.Megaparsec qualified as Parse
@@ -75,6 +78,16 @@ part1 = zip [1..] >>> filter (snd >>> lessThan) >>> fmap fst >>> sum
   where
     lessThan (a, b) = a < b
 
+part2 :: [(Input Int, Input Int)] -> Int
+part2 pairs = index (divider 2) * index (divider 6)
+  where
+    (ones, twos) = unzip pairs
+    sorted =
+        List.sort (divider 2 : ones) `merge`
+        List.sort (divider 6 : twos)
+    divider x = In [Right $ In [Left x]]
+    index x = 1 + fromJust (List.elemIndex x sorted)
+
 main :: IO ()
 main = do
     text <- readInputFileUtf8 "input/day-13.txt"
@@ -82,3 +95,4 @@ main = do
         Left err -> die $ Parse.errorBundlePretty err
         Right pairs -> do
             print $ part1 pairs
+            print $ part2 pairs
