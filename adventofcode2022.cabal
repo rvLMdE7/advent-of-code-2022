@@ -169,6 +169,9 @@ library adventofcode2022-tests
         , adventofcode2022
         , tasty ^>=1.4.2
         , tasty-hunit ^>=0.10.0
+        , tasty-quickcheck ^>=0.10.2
+        , QuickCheck ^>=2.14.2
+        , quickcheck-classes ^>=0.6.5
     exposed-modules:
         , Test01
         , Test02
@@ -182,6 +185,7 @@ library adventofcode2022-tests
         , Test10
         , Test11
         , Test12
+        , Test13
         , Test20
 
 common common-test-options
@@ -257,6 +261,12 @@ test-suite test-11
 test-suite test-12
     import: common-test-options
     mixins: adventofcode2022-tests (Test12 as Test)
+    main-is: Spec.hs
+    type: exitcode-stdio-1.0
+
+test-suite test-13
+    import: common-test-options
+    mixins: adventofcode2022-tests (Test13 as Test)
     main-is: Spec.hs
     type: exitcode-stdio-1.0
 

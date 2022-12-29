@@ -17,6 +17,21 @@ newtype Input a = In
     { out :: [Either a (Input a)] }
     deriving (Eq, Show)
 
+instance Ord a => Ord (Input a) where
+    compare = order
+
+order :: Ord a => Input a -> Input a -> Ordering
+order (In [])     (In [])     = EQ
+order (In [])     (In _)      = LT
+order (In _)      (In [])     = GT
+order (In (a:as)) (In (b:bs)) = ordering a b <> order (In as) (In bs)
+
+ordering :: Ord a => Either a (Input a) -> Either a (Input a) -> Ordering
+ordering (Left a)   (Left b)   = a `compare` b
+ordering (Right as) (Right bs) = as `order` bs
+ordering a@(Left _) (Right bs) = In [a] `order` bs
+ordering (Right as) b@(Left _) = as `order` In [b]
+
 
 parseInput :: Parser a -> Parser (Input a)
 parseInput parser = do
@@ -55,23 +70,10 @@ pretty = go >>> wrap
     wrap txt = "[" <> txt <> "]"
 
 
-order :: Ord a => Input a -> Input a -> Ordering
-order (In [])     (In [])     = EQ
-order (In [])     (In _)      = LT
-order (In _)      (In [])     = GT
-order (In (a:as)) (In (b:bs)) = ordering a b <> order (In as) (In bs)
-
-ordering :: Ord a => Either a (Input a) -> Either a (Input a) -> Ordering
-ordering (Left a)   (Left b)   = a `compare` b
-ordering (Right as) (Right bs) = as `order` bs
-ordering a@(Left _) (Right bs) = In [a] `order` bs
-ordering (Right as) b@(Left _) = as `order` In [b]
-
-
 part1 :: Ord a => [(Input a, Input a)] -> Int
-part1 = zip [1..] >>> filter (snd >>> inOrder) >>> fmap fst >>> sum
+part1 = zip [1..] >>> filter (snd >>> lessThan) >>> fmap fst >>> sum
   where
-    inOrder (a, b) = order a b == LT
+    lessThan (a, b) = a < b
 
 main :: IO ()
 main = do
